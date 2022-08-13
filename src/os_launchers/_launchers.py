@@ -2,7 +2,7 @@ import os
 import subprocess
 import webbrowser
 from typing import Union, Optional
-from constants import (
+from os_launchers.constants import (
     CURRENT_MACHINE,
     DESKTOP_ENVIRONMENT,
     SUPPORTED_DE_FILE_BROWSERS,

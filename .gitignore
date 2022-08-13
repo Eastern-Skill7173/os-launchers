@@ -1,0 +1,9 @@
+.vscode/
+.mypy_cache/
+.idea/
+venv/
+release/
+dist/
+*egg-info/
+__pycache__/
+project_setup_requirements.txt

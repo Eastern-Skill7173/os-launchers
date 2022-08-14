@@ -50,7 +50,7 @@ def open_terminal(
         if_windows_launch_cmd: bool = False) -> subprocess.Popen:
     """
     Function to launch the terminal with the given directory
-    NOTE: CMD LAUNCHER IS NOT TESTED
+    NOTE: CMD LAUNCHER IS NOT FULLY COMPATIBLE
 
     Parameters
     ----------
@@ -69,7 +69,11 @@ def open_terminal(
     command_list = None
     if CURRENT_MACHINE == "Windows":
         if if_windows_launch_cmd:
+            # Cmd launcher requires powershell to be installed
+            # which is not ideal
+            # TODO: Find replacement for the current cmd launch command
             command_list = [
+                "PowerShell",
                 "Start-Process",
                 "-WorkingDirectory",
                 directory,

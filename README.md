@@ -13,9 +13,9 @@ These instructions will get you a copy of the project up and running on your loc
 This project is available on [pypi.org](https://pypi.org/), therefore, you can easily
 install this project through pip:
 
-    ```
-    pip install os_launchers
-    ```
+   ```
+   pip install os_launchers
+   ```
 
 ### From Source
 
@@ -123,9 +123,9 @@ or maybe you would like to contribute to the project
 
 After cloning the repo, switch to it's directory, and run the following command through your terminal:
 
-    ```
-    pip install .
-    ```
+   ```
+   pip install .
+   ```
 
 ## Built With
 

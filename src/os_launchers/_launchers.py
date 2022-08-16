@@ -8,6 +8,7 @@ from os_launchers.constants import (
     SUPPORTED_DE_FILE_BROWSERS,
     SUPPORTED_DE_TERMINALS,
 )
+from os_launchers.exceptions import UnsupportedDesktopEnvironment
 from pathlib import Path
 
 __all__ = (
@@ -47,7 +48,7 @@ def open_url(url: str, new: int = 2, auto_raise: bool = True) -> None:
 
 def open_terminal(
         directory: FilePath,
-        if_windows_launch_cmd: bool = False) -> subprocess.Popen:
+        if_windows_launch_cmd: bool = False) -> Optional[subprocess.Popen]:
     """
     Function to launch the terminal with the given directory
     NOTE: CMD LAUNCHER IS NOT FULLY COMPATIBLE
@@ -70,7 +71,6 @@ def open_terminal(
     if CURRENT_MACHINE == "Windows":
         if if_windows_launch_cmd:
             # Cmd launcher requires powershell to be installed
-            # which is not ideal
             # TODO: Find replacement for the current cmd launch command
             command_list = [
                 "PowerShell",
@@ -100,7 +100,10 @@ def open_terminal(
         if linux_terminal_command is not None:
             command_list = [*linux_terminal_command, directory]
         else:
-            command_list = []
+            raise UnsupportedDesktopEnvironment(
+                "{} is not a supported desktop environment"
+                .format(DESKTOP_ENVIRONMENT)
+            )
     return subprocess.Popen(command_list)
 
 
@@ -134,7 +137,9 @@ def open_file(file_path: FilePath) -> Optional[subprocess.Popen]:
         )
 
 
-def open_file_manager(file_or_directory_path: FilePath) -> subprocess.Popen:
+def open_file_manager(
+        file_or_directory_path: FilePath,
+        always_open_parent_dir: bool = False) -> Optional[subprocess.Popen]:
     """
     Function to open the file manager in the
     parent directory of the given path and highlighting it
@@ -146,6 +151,12 @@ def open_file_manager(file_or_directory_path: FilePath) -> subprocess.Popen:
     ----------
     file_or_directory_path : FilePath
         Path to the file or directory to be opened
+    always_open_parent_dir : bool
+        On the supported platforms and DE, this option will make
+        no difference, however, on an unsupported DE instead of
+        raising `UnsupportedDesktopEnvironment`,
+        will just open the parent path with no highlighting or selection
+        (default is False)
 
     Returns
     -------
@@ -167,14 +178,20 @@ def open_file_manager(file_or_directory_path: FilePath) -> subprocess.Popen:
         # In unsupported file manager the parent directory will be opened
         linux_file_browser_command = \
             SUPPORTED_DE_FILE_BROWSERS.get(DESKTOP_ENVIRONMENT)
-        if linux_file_browser_command is None:
-            parent_path = str(Path(file_or_directory_path).parent)
-            command_list = [
-                "xdg-open", parent_path
-            ]
-        else:
+        if linux_file_browser_command is not None:
             command_list = [
                 *linux_file_browser_command,
                 file_or_directory_path
             ]
+        else:
+            if always_open_parent_dir:
+                parent_path = str(Path(file_or_directory_path).parent)
+                command_list = [
+                    "xdg-open", parent_path
+                ]
+            else:
+                raise UnsupportedDesktopEnvironment(
+                    "{} is not a supported desktop environment"
+                    .format(DESKTOP_ENVIRONMENT)
+                )
     return subprocess.Popen(command_list)

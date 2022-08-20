@@ -11,3 +11,7 @@
 * Added `always_open_parent_dir` parameter to `open_file_manager` launcher to open the parent directory regardless of the supported or unsupported DE
 * Added `exceptions.py` and within it `UnsupportedDesktopEnvironment` exception subclass
 * Updated `README.md`. Changed line 17 (`pip install os_launchers`) to `pip install os-launchers`, Fixed grammatical issues
+
+## 0.1.2
+* Fixed usage of f-string in `src/os-launchers/_launchers.py` (line 158). Changed to `.format` for more compatibility with older python versions
+* More efficient implementation of powershell and cmd launchers (merging and using ternary operators)

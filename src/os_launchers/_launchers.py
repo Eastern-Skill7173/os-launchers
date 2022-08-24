@@ -1,7 +1,7 @@
 import os
 import subprocess
 import webbrowser
-from typing import Union, Optional
+from typing import Union, Optional, Literal
 from os_launchers.constants import (
     CURRENT_MACHINE,
     DESKTOP_ENVIRONMENT,
@@ -14,7 +14,7 @@ from pathlib import Path
 __all__ = (
     "open_url",
     "open_terminal",
-    "open_file",
+    "open_with_associated_program",
     "open_file_manager",
 )
 
@@ -22,7 +22,10 @@ __all__ = (
 FilePath = Union[str, Path]
 
 
-def open_url(url: str, new: int = 2, auto_raise: bool = True) -> None:
+def open_url(
+        url: str,
+        new: Literal[1, 2, 3] = 2,
+        auto_raise: bool = True) -> None:
     """
     Function to open the passed url in user's default browser
 
@@ -48,7 +51,8 @@ def open_url(url: str, new: int = 2, auto_raise: bool = True) -> None:
 
 def open_terminal(
         directory: FilePath,
-        if_windows_launch_cmd: bool = False) -> Optional[subprocess.Popen]:
+        if_windows_launch_cmd: bool = False,
+        **popen_kwargs) -> Optional[subprocess.Popen]:
     """
     Function to launch the terminal with the given directory
 
@@ -92,17 +96,19 @@ def open_terminal(
                 "{} is not a supported desktop environment"
                 .format(DESKTOP_ENVIRONMENT)
             )
-    return subprocess.Popen(command_list)
+    return subprocess.Popen(command_list, **popen_kwargs)
 
 
-def open_file(file_path: FilePath) -> Optional[subprocess.Popen]:
+def open_with_associated_program(
+        path: FilePath,
+        **popen_kwargs) -> Optional[subprocess.Popen]:
     """
-    Function to open the given file path with the associated program
+    Function to open the given path with the associated program
 
     Parameters
     ----------
-    file_path : FilePath
-        Path to the file to be opened
+    path : FilePath
+        Path to the file or directory to be opened
 
     Returns
     -------
@@ -112,22 +118,22 @@ def open_file(file_path: FilePath) -> Optional[subprocess.Popen]:
         On other operating systems, the Popen subprocess
         used to launch the file will be returned
     """
-    file_path = str(file_path)
+    path = str(path)
+    command_list = None
     if CURRENT_MACHINE == "Windows":
-        os.startfile(file_path)
+        os.startfile(path)
+        return
     elif CURRENT_MACHINE == "Darwin":
-        return subprocess.Popen(
-            ["open", file_path],
-        )
+        command_list = ["open", path]
     else:
-        return subprocess.Popen(
-            ["xdg-open", file_path],
-        )
+        command_list = ["xdg-open", path]
+    return subprocess.Popen(command_list, **popen_kwargs)
 
 
 def open_file_manager(
-        file_or_directory_path: FilePath,
-        always_open_parent_dir: bool = False) -> Optional[subprocess.Popen]:
+        path: FilePath,
+        always_open_parent_dir: bool = False,
+        **popen_kwargs) -> Optional[subprocess.Popen]:
     """
     Function to open the file manager in the
     parent directory of the given path and highlighting it
@@ -137,7 +143,7 @@ def open_file_manager(
 
     Parameters
     ----------
-    file_or_directory_path : FilePath
+    path : FilePath
         Path to the file or directory to be opened
     always_open_parent_dir : bool
         On the supported platforms and DE, this option will make
@@ -151,15 +157,15 @@ def open_file_manager(
     subporcess.Popen
         The Popen subprocess used to launch the file manager
     """
-    file_or_directory_path = str(file_or_directory_path)
+    path = str(path)
     command_list = None
     if CURRENT_MACHINE == "Windows":
         command_list = [
-            "explorer", "/select,{}".format(file_or_directory_path)
+            "explorer", "/select,{}".format(path)
         ]
     elif CURRENT_MACHINE == "Darwin":
         command_list = [
-            "open", "-R", file_or_directory_path
+            "open", "-R", path
         ]
     else:
         # Many file managers do not support highlighting a file or folder
@@ -169,11 +175,11 @@ def open_file_manager(
         if linux_file_browser_command is not None:
             command_list = [
                 *linux_file_browser_command,
-                file_or_directory_path
+                path
             ]
         else:
             if always_open_parent_dir:
-                parent_path = str(Path(file_or_directory_path).parent)
+                parent_path = str(Path(path).parent)
                 command_list = [
                     "xdg-open", parent_path
                 ]
@@ -182,4 +188,4 @@ def open_file_manager(
                     "{} is not a supported desktop environment"
                     .format(DESKTOP_ENVIRONMENT)
                 )
-    return subprocess.Popen(command_list)
+    return subprocess.Popen(command_list, **popen_kwargs)

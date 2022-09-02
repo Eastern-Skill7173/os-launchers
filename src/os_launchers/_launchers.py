@@ -2,12 +2,7 @@ import os
 import subprocess
 import webbrowser
 from typing import Union, Optional, Literal
-from os_launchers.constants import (
-    CURRENT_MACHINE,
-    DESKTOP_ENVIRONMENT,
-    SUPPORTED_DE_FILE_BROWSERS,
-    SUPPORTED_DE_TERMINALS,
-)
+from os_launchers.constants import CURRENT_MACHINE
 from os_launchers.exceptions import UnsupportedDesktopEnvironment
 from pathlib import Path
 
@@ -25,7 +20,7 @@ FilePath = Union[str, Path]
 def open_url(
         url: str,
         new: Literal[1, 2, 3] = 2,
-        auto_raise: bool = True) -> None:
+        auto_raise: bool = True) -> bool:
     """
     Function to open the passed url in user's default browser
 
@@ -46,7 +41,7 @@ def open_url(
     bool
         Boolean returned by `webbrowser.open`
     """
-    webbrowser.open(url, new=new, autoraise=auto_raise)
+    return webbrowser.open(url, new=new, autoraise=auto_raise)
 
 
 def open_terminal(
@@ -72,29 +67,32 @@ def open_terminal(
     directory = str(directory)
     command_list = None
     if CURRENT_MACHINE == "Windows":
+        from os_launchers.constants import windows
         command_list = [
-            "PowerShell",
+            windows.POWERSHELL_DIRECTORY,
             "Start-Process",
             "-WorkingDirectory",
             directory,
             "PowerShell" if not if_windows_launch_cmd else "Cmd"
         ]
     elif CURRENT_MACHINE == "Darwin":
+        from os_launchers.constants import osx
         command_list = [
-            "open",
+            osx.OPEN_DIRECTORY,
             "-a",
             "Terminal",
             directory
         ]
     else:
+        from os_launchers.constants import linux
         linux_terminal_command = \
-            SUPPORTED_DE_TERMINALS.get(DESKTOP_ENVIRONMENT)
+            linux.SUPPORTED_DE_TERMINALS.get(linux.DESKTOP_ENVIRONMENT)
         if linux_terminal_command is not None:
             command_list = [*linux_terminal_command, directory]
         else:
             raise UnsupportedDesktopEnvironment(
                 "{} is not a supported desktop environment"
-                .format(DESKTOP_ENVIRONMENT)
+                .format(linux.DESKTOP_ENVIRONMENT)
             )
     return subprocess.Popen(command_list, **popen_kwargs)
 
@@ -124,9 +122,11 @@ def open_with_associated_program(
         os.startfile(path)
         return
     elif CURRENT_MACHINE == "Darwin":
-        command_list = ["open", path]
+        from os_launchers.constants import osx
+        command_list = [osx.OPEN_DIRECTORY, path]
     else:
-        command_list = ["xdg-open", path]
+        from os_launchers.constants import linux
+        command_list = [linux.XDG_OPEN_DIRECTORY, path]
     return subprocess.Popen(command_list, **popen_kwargs)
 
 
@@ -160,18 +160,21 @@ def open_file_manager(
     path = str(path)
     command_list = None
     if CURRENT_MACHINE == "Windows":
+        from os_launchers.constants import windows
         command_list = [
-            "explorer", "/select,{}".format(path)
+            windows.EXPLORER_DIRECTORY, "/select,{}".format(path)
         ]
     elif CURRENT_MACHINE == "Darwin":
+        from os_launchers.constants import osx
         command_list = [
-            "open", "-R", path
+            osx.OPEN_DIRECTORY, "-R", path
         ]
     else:
         # Many file managers do not support highlighting a file or folder
         # In unsupported file manager the parent directory will be opened
+        from os_launchers.constants import linux
         linux_file_browser_command = \
-            SUPPORTED_DE_FILE_BROWSERS.get(DESKTOP_ENVIRONMENT)
+            linux.SUPPORTED_DE_FILE_BROWSERS.get(linux.DESKTOP_ENVIRONMENT)
         if linux_file_browser_command is not None:
             command_list = [
                 *linux_file_browser_command,
@@ -186,6 +189,6 @@ def open_file_manager(
             else:
                 raise UnsupportedDesktopEnvironment(
                     "{} is not a supported desktop environment"
-                    .format(DESKTOP_ENVIRONMENT)
+                    .format(linux.DESKTOP_ENVIRONMENT)
                 )
     return subprocess.Popen(command_list, **popen_kwargs)

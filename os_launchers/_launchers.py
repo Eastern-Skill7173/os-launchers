@@ -73,26 +73,29 @@ def open_terminal(
             "Start-Process",
             "-WorkingDirectory",
             directory,
-            "PowerShell" if not if_windows_launch_cmd else "Cmd"
+            windows.POWERSHELL_DIRECTORY if not if_windows_launch_cmd
+            else windows.CMD_DIRECTORY
         ]
     elif CURRENT_MACHINE == "Darwin":
-        from os_launchers.constants import osx
+        from os_launchers.constants import unix_family
         command_list = [
-            osx.OPEN_DIRECTORY,
+            unix_family.OPEN_DIRECTORY,
             "-a",
             "Terminal",
             directory
         ]
     else:
-        from os_launchers.constants import linux
-        linux_terminal_command = \
-            linux.SUPPORTED_DE_TERMINALS.get(linux.DESKTOP_ENVIRONMENT)
-        if linux_terminal_command is not None:
-            command_list = [*linux_terminal_command, directory]
+        from os_launchers.constants import unix_family
+        de_terminal_command = \
+            unix_family.SUPPORTED_DE_TERMINALS.get(
+                unix_family.DESKTOP_ENVIRONMENT
+            )
+        if de_terminal_command is not None:
+            command_list = [*de_terminal_command, directory]
         else:
             raise UnsupportedDesktopEnvironment(
                 "{} is not a supported desktop environment"
-                .format(linux.DESKTOP_ENVIRONMENT)
+                .format(unix_family.DESKTOP_ENVIRONMENT)
             )
     return subprocess.Popen(command_list, **popen_kwargs)
 
@@ -122,11 +125,11 @@ def open_with_associated_program(
         os.startfile(path)
         return
     elif CURRENT_MACHINE == "Darwin":
-        from os_launchers.constants import osx
-        command_list = [osx.OPEN_DIRECTORY, path]
+        from os_launchers.constants import unix_family
+        command_list = [unix_family.OPEN_DIRECTORY, path]
     else:
-        from os_launchers.constants import linux
-        command_list = [linux.XDG_OPEN_DIRECTORY, path]
+        from os_launchers.constants import unix_family
+        command_list = [unix_family.XDG_OPEN_DIRECTORY, path]
     return subprocess.Popen(command_list, **popen_kwargs)
 
 
@@ -165,30 +168,32 @@ def open_file_manager(
             windows.EXPLORER_DIRECTORY, "/select,{}".format(path)
         ]
     elif CURRENT_MACHINE == "Darwin":
-        from os_launchers.constants import osx
+        from os_launchers.constants import unix_family
         command_list = [
-            osx.OPEN_DIRECTORY, "-R", path
+            unix_family.OPEN_DIRECTORY, "-R", path
         ]
     else:
         # Many file managers do not support highlighting a file or folder
         # In unsupported file manager the parent directory will be opened
-        from os_launchers.constants import linux
-        linux_file_browser_command = \
-            linux.SUPPORTED_DE_FILE_BROWSERS.get(linux.DESKTOP_ENVIRONMENT)
-        if linux_file_browser_command is not None:
+        from os_launchers.constants import unix_family
+        de_file_browser_command = \
+            unix_family.SUPPORTED_DE_FILE_BROWSERS.get(
+                unix_family.DESKTOP_ENVIRONMENT
+            )
+        if de_file_browser_command is not None:
             command_list = [
-                *linux_file_browser_command,
+                *de_file_browser_command,
                 path
             ]
         else:
             if always_open_parent_dir:
                 parent_path = str(Path(path).parent)
                 command_list = [
-                    "xdg-open", parent_path
+                    unix_family.XDG_OPEN_DIRECTORY, parent_path
                 ]
             else:
                 raise UnsupportedDesktopEnvironment(
                     "{} is not a supported desktop environment"
-                    .format(linux.DESKTOP_ENVIRONMENT)
+                    .format(unix_family.DESKTOP_ENVIRONMENT)
                 )
     return subprocess.Popen(command_list, **popen_kwargs)

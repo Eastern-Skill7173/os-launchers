@@ -2,16 +2,20 @@ import os
 from typing import Final
 
 __all__ = (
-    "DESKTOP_ENVIRONMENT",
     "EXECUTABLES_DIRECTORY",
+    "OPEN_DIRECTORY",
+    "DESKTOP_ENVIRONMENT",
     "XDG_OPEN_DIRECTORY",
     "SUPPORTED_DE_FILE_BROWSERS",
     "SUPPORTED_DE_TERMINALS",
 )
 
 
-DESKTOP_ENVIRONMENT: Final = os.getenv("DESKTOP_SESSION")
 EXECUTABLES_DIRECTORY: Final = os.path.join(os.sep, "usr", "bin")
+# OSX related info
+OPEN_DIRECTORY: Final = os.path.join(EXECUTABLES_DIRECTORY, "open")
+# Linux & Other OS info
+DESKTOP_ENVIRONMENT: Final = os.getenv("DESKTOP_SESSION")
 XDG_OPEN_DIRECTORY: Final = os.path.join(EXECUTABLES_DIRECTORY, "xdg-open")
 _NAUTILUS_DIRECTORY: Final = os.path.join(EXECUTABLES_DIRECTORY, "nautilus")
 _GNOME_TERMINAL_DIRECTORY: Final = os.path.join(

@@ -1,8 +1,9 @@
 import os
 import subprocess
 import webbrowser
-from typing import Union, Optional, Literal
-from os_launchers.constants import CURRENT_MACHINE
+from typing import Optional, Literal
+from os_launchers.type_hints import PathType
+from os_launchers.constants import CURRENT_MACHINE, USER_DIRECTORY
 from os_launchers.exceptions import UnsupportedDesktopEnvironment
 from pathlib import Path
 
@@ -12,9 +13,6 @@ __all__ = (
     "open_with_associated_program",
     "open_file_manager",
 )
-
-
-FilePath = Union[str, Path]
 
 
 def open_url(
@@ -45,7 +43,7 @@ def open_url(
 
 
 def open_terminal(
-        directory: FilePath,
+        directory: PathType = USER_DIRECTORY,
         if_windows_launch_cmd: bool = False,
         **popen_kwargs) -> Optional[subprocess.Popen]:
     """
@@ -53,7 +51,7 @@ def open_terminal(
 
     Parameters
     ----------
-    directory : FilePath
+    directory : PathType
         Directory to launch the terminal with
     if_windows_launch_cmd : bool
         If the OS is of `Windows` Family,
@@ -87,11 +85,19 @@ def open_terminal(
     else:
         from os_launchers.constants import unix_family
         de_terminal_command = \
-            unix_family.SUPPORTED_DE_TERMINALS.get(
+            unix_family.SUPPORTED_TERMINALS.get(
+                unix_family.DESKTOP_ENVIRONMENT
+            )
+        de_terminal_workdir_flag = \
+            unix_family.SUPPORTED_TERMINALS_WORKDIR_FLAG.get(
                 unix_family.DESKTOP_ENVIRONMENT
             )
         if de_terminal_command is not None:
-            command_list = [*de_terminal_command, directory]
+            command_list = [
+                de_terminal_command,
+                de_terminal_workdir_flag,
+                directory,
+            ]
         else:
             raise UnsupportedDesktopEnvironment(
                 "{} is not a supported desktop environment"
@@ -101,14 +107,14 @@ def open_terminal(
 
 
 def open_with_associated_program(
-        path: FilePath,
+        path: PathType,
         **popen_kwargs) -> Optional[subprocess.Popen]:
     """
     Function to open the given path with the associated program
 
     Parameters
     ----------
-    path : FilePath
+    path : PathType
         Path to the file or directory to be opened
 
     Returns
@@ -134,8 +140,8 @@ def open_with_associated_program(
 
 
 def open_file_manager(
-        path: FilePath,
-        always_open_parent_dir: bool = False,
+        path: PathType = USER_DIRECTORY,
+        highlight: bool = False,
         **popen_kwargs) -> Optional[subprocess.Popen]:
     """
     Function to open the file manager in the
@@ -146,13 +152,19 @@ def open_file_manager(
 
     Parameters
     ----------
-    path : FilePath
+    path : PathType
         Path to the file or directory to be opened
+        in the file manager (default is `USER_DIRECTORY`)
+    hightlight : bool
+        If True, open the file manager in the parent directory,
+        highlight the file and scroll to its position
+        (default is False)
     always_open_parent_dir : bool
         On the supported platforms and DE, this option will make
         no difference, however, on an unsupported DE instead of
         raising `UnsupportedDesktopEnvironment`,
         will just open the parent path with no highlighting or selection
+        (Will only be considered if highlight is True)
         (default is False)
 
     Returns
@@ -165,35 +177,38 @@ def open_file_manager(
     if CURRENT_MACHINE == "Windows":
         from os_launchers.constants import windows
         command_list = [
-            windows.EXPLORER_DIRECTORY, "/select,{}".format(path)
+            windows.EXPLORER_DIRECTORY,
+            "{0}{1}".format("/select," if highlight else '', path)
         ]
     elif CURRENT_MACHINE == "Darwin":
         from os_launchers.constants import unix_family
         command_list = [
-            unix_family.OPEN_DIRECTORY, "-R", path
+            unix_family.OPEN_DIRECTORY, path
         ]
+        if highlight:
+            command_list.insert(1, "-R")
     else:
         # Many file managers do not support highlighting a file or folder
         # In unsupported file manager the parent directory will be opened
         from os_launchers.constants import unix_family
         de_file_browser_command = \
-            unix_family.SUPPORTED_DE_FILE_BROWSERS.get(
+            unix_family.SUPPORTED_FILE_MANAGERS.get(
+                unix_family.DESKTOP_ENVIRONMENT
+            )
+        de_file_manager_highlight_flag = \
+            unix_family.SUPPORTED_FILE_MANAGERS_HIGHLIGHT_FLAGS.get(
                 unix_family.DESKTOP_ENVIRONMENT
             )
         if de_file_browser_command is not None:
             command_list = [
-                *de_file_browser_command,
+                de_file_browser_command,
                 path
             ]
+            if highlight and de_file_manager_highlight_flag is not None:
+                command_list.insert(1, de_file_manager_highlight_flag)
         else:
-            if always_open_parent_dir:
-                parent_path = str(Path(path).parent)
-                command_list = [
-                    unix_family.XDG_OPEN_DIRECTORY, parent_path
-                ]
-            else:
-                raise UnsupportedDesktopEnvironment(
-                    "{} is not a supported desktop environment"
-                    .format(unix_family.DESKTOP_ENVIRONMENT)
-                )
+            raise UnsupportedDesktopEnvironment(
+                "{} is not a supported desktop environment"
+                .format(unix_family.DESKTOP_ENVIRONMENT)
+            )
     return subprocess.Popen(command_list, **popen_kwargs)

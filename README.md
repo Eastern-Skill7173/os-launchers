@@ -2,7 +2,17 @@
 
 A collection of cross-platform launchers to interact with the OS from a high level
 point, simplifying interactions like opening the terminal on every platform
-or opening a file on multiple platforms
+or opening a file on multiple platforms.
+
+Currently Supported Operating System:
+
+* Windows
+* OSX
+* Linux
+
+Soon to be integrated:
+
+* BSD
 
 ## Getting Started
 

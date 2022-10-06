@@ -15,3 +15,9 @@
 ## 0.1.2
 * Fixed usage of f-string in `src/os-launchers/_launchers.py` (line 158). Changed to `.format` for more compatibility with older python versions
 * More efficient implementation of powershell and cmd launchers (merging and using ternary operators)
+
+## 0.2.0
+* Added `conversions.py` to `os_launchers/` containing classes to be able to easily convert between the type hint's allowed types
+* Added `RegexPattern` type hint to `os_launchers/type_hints.py` for either a compiled regex pattern or string equivalent
+* Added `profiles/` to `os_launchers/` containing specific profiles for each OS and unix DE (as of now, the profiles are only written for unix DEs) and their components such as terminals and file managers (as of now, stored separately in their respective files)
+* Removed unused constants from `os_launchers/constants/unix_family.py`

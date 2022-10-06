@@ -3,9 +3,9 @@ import subprocess
 import webbrowser
 from typing import Optional, Literal
 from os_launchers.type_hints import PathType
+from os_launchers.conversions import PathTypeConversion
 from os_launchers.constants import CURRENT_MACHINE, USER_DIRECTORY
-from os_launchers.exceptions import UnsupportedDesktopEnvironment
-from pathlib import Path
+from os_launchers import exceptions
 
 __all__ = (
     "open_url",
@@ -62,7 +62,7 @@ def open_terminal(
     subprocess.Popen
         The Popen subprocess used to launch the terminal
     """
-    directory = str(directory)
+    directory = PathTypeConversion.as_str(directory)
     command_list = None
     if CURRENT_MACHINE == "Windows":
         from os_launchers.constants import windows
@@ -82,27 +82,25 @@ def open_terminal(
             "Terminal",
             directory
         ]
-    else:
+    elif CURRENT_MACHINE in ("Linux", "FreeBSD"):
         from os_launchers.constants import unix_family
-        de_terminal_command = \
-            unix_family.SUPPORTED_TERMINALS.get(
-                unix_family.DESKTOP_ENVIRONMENT
-            )
-        de_terminal_workdir_flag = \
-            unix_family.SUPPORTED_TERMINALS_WORKDIR_FLAG.get(
-                unix_family.DESKTOP_ENVIRONMENT
-            )
-        if de_terminal_command is not None:
-            command_list = [
-                de_terminal_command,
-                de_terminal_workdir_flag,
-                directory,
-            ]
+        from os_launchers.profiles.unix_family.des import registered_des
+        for name_pattern, desktop_environment in registered_des.items():
+            if name_pattern.search(unix_family.USER_DESKTOP_ENVIRONMENT):
+                return desktop_environment.terminal(
+                    working_directory=directory,
+                    **popen_kwargs
+                )
         else:
-            raise UnsupportedDesktopEnvironment(
-                "{} is not a supported desktop environment"
-                .format(unix_family.DESKTOP_ENVIRONMENT)
+            raise exceptions.UnsupportedDesktopEnvironment(
+                "{0} is not a supported desktop environment"
+                .format(unix_family.USER_DESKTOP_ENVIRONMENT)
             )
+    else:
+        raise exceptions.UnsupportedOperatingSystem(
+            "{0} is not a supported operating system"
+            .format(CURRENT_MACHINE)
+        )
     return subprocess.Popen(command_list, **popen_kwargs)
 
 
@@ -125,7 +123,7 @@ def open_with_associated_program(
         On other operating systems, the Popen subprocess
         used to launch the file will be returned
     """
-    path = str(path)
+    path = PathTypeConversion.as_str(path)
     command_list = None
     if CURRENT_MACHINE == "Windows":
         os.startfile(path)
@@ -133,9 +131,14 @@ def open_with_associated_program(
     elif CURRENT_MACHINE == "Darwin":
         from os_launchers.constants import unix_family
         command_list = [unix_family.OPEN_DIRECTORY, path]
-    else:
+    elif CURRENT_MACHINE in ("Linux", "FreeBSD"):
         from os_launchers.constants import unix_family
         command_list = [unix_family.XDG_OPEN_DIRECTORY, path]
+    else:
+        raise exceptions.UnsupportedOperatingSystem(
+            "{0} is not a supported operating system"
+            .format(CURRENT_MACHINE)
+        )
     return subprocess.Popen(command_list, **popen_kwargs)
 
 
@@ -172,7 +175,7 @@ def open_file_manager(
     subporcess.Popen
         The Popen subprocess used to launch the file manager
     """
-    path = str(path)
+    path = PathTypeConversion.as_str(path)
     command_list = None
     if CURRENT_MACHINE == "Windows":
         from os_launchers.constants import windows
@@ -187,28 +190,26 @@ def open_file_manager(
         ]
         if highlight:
             command_list.insert(1, "-R")
-    else:
+    elif CURRENT_MACHINE in ("Linux", "FreeBSD"):
         # Many file managers do not support highlighting a file or folder
         # In unsupported file manager the parent directory will be opened
         from os_launchers.constants import unix_family
-        de_file_browser_command = \
-            unix_family.SUPPORTED_FILE_MANAGERS.get(
-                unix_family.DESKTOP_ENVIRONMENT
-            )
-        de_file_manager_highlight_flag = \
-            unix_family.SUPPORTED_FILE_MANAGERS_HIGHLIGHT_FLAGS.get(
-                unix_family.DESKTOP_ENVIRONMENT
-            )
-        if de_file_browser_command is not None:
-            command_list = [
-                de_file_browser_command,
-                path
-            ]
-            if highlight and de_file_manager_highlight_flag is not None:
-                command_list.insert(1, de_file_manager_highlight_flag)
+        from os_launchers.profiles.unix_family import registered_des
+        for name_pattern, desktop_environment in registered_des.items():
+            if name_pattern.search(unix_family.USER_DESKTOP_ENVIRONMENT):
+                return desktop_environment.file_manager(
+                    path=path,
+                    highlight=highlight,
+                    **popen_kwargs
+                )
         else:
-            raise UnsupportedDesktopEnvironment(
+            raise exceptions.UnsupportedDesktopEnvironment(
                 "{} is not a supported desktop environment"
                 .format(unix_family.DESKTOP_ENVIRONMENT)
             )
+    else:
+        raise exceptions.UnsupportedOperatingSystem(
+            "{0} is not a supported operating system"
+            .format(CURRENT_MACHINE)
+        )
     return subprocess.Popen(command_list, **popen_kwargs)
